@@ -6,14 +6,20 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
+	"time"
 )
 
 func main() {
 	inputFileName := "problems.csv"
-	if len(os.Args) > 1 {
+	timeLimit := 30
+	var err error
+	if len(os.Args) > 2 {
 		inputFileName = os.Args[1]
-	} else {
-		fmt.Println(`Input file name is not provided. Using default file name of "problems.csv".`)
+		timeLimit, err = strconv.Atoi(os.Args[2])
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	inputFile, err := os.Open(inputFileName)
@@ -25,22 +31,33 @@ func main() {
 
 	r := csv.NewReader(inputFile)
 	count := 0
+	corrAnsCount := 0
 	for {
+		t := time.NewTimer(time.Duration(timeLimit) * time.Second)
+		defer t.Stop()
+		go func() {
+			<-t.C
+			fmt.Printf("Sorry! Your time limit of %d exceeded!", timeLimit)
+			os.Exit(0)
+		}()
+
 		record, err := r.Read()
 		if err == io.EOF {
 			break
 		}
+		count++
 		if err != nil {
 			log.Fatal(err)
 		}
 		// fmt.Println(record)
-		fmt.Println("Your question is :", record[0])
+		fmt.Println("Your question is:", record[0])
 		var ans string
 		fmt.Scanln(&ans)
 
 		if ans == record[1] {
-			count++
+			corrAnsCount++
 		}
+
 	}
-	fmt.Printf("Number of correct answers is %d", count)
+	fmt.Printf("You answered %d questinos correctly out of %d", corrAnsCount, count)
 }
